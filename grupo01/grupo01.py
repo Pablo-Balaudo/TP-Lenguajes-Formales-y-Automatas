@@ -21,6 +21,11 @@ tokens = reserved + (
 
     # Other data (name of the table, name of the column)
     'TABLE_NAME', 'COLUMN_NAME'
+
+    # DELIMITADORES (( ) [ ] , .)
+    'LPAREN', 'RPAREN',
+    'LBRACKET', 'RBRACKET',
+    'COMMA', 'PERIOD',
 )
 
 t_ADD = r'\+'
@@ -64,6 +69,14 @@ t_TABLE_NAME = r'[a-zA-Z_]'
 t_COLUMN_NAME = r'[a-zA-Z_]'
 
 t_ignore = " \t"  # ignoramos el espacio vacío (ver bien si sql ejecuta una query si le elimino los espacios vacíos)
+
+# delimitadores
+t_LPAREN = r'\('
+t_RPAREN = r'\)'
+t_LBRACKET = r'\['
+t_RBRACKET = r'\]'
+t_COMMA = r','
+t_PERIOD = r'\.'
 
 
 def t_error(t):
