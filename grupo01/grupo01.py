@@ -17,6 +17,7 @@ reserved = {
     'RIGHT_JOIN': 'RIGHT_JOIN',
     'SELECT': 'SELECT',
     'WHERE': 'WHERE',
+    'ON':'ON',
 
     # String Data Types
     'BINARY': 'BINARY',
@@ -62,7 +63,7 @@ tokens = list(reserved.values()) + [
     'LPAREN', 'RPAREN', 'LBRACKET', 'RBRACKET', 'COMMA', 'PERIOD',
 
     # Other data (name of the table, name of the column, ID for reserved words lookup)
-    'TABLE_NAME', 'COLUMN_NAME', 'ID'
+    'TABLE_NAME', 'COLUMN_NAME', 'ID', 'NUMBER'
 ]
 
 t_EQUAL_TO = r'\='
@@ -102,6 +103,10 @@ def t_ID(t):
     t.type = reserved.get(t.value, 'ID')
     return t
 
+def t_NUMBER(t):
+    r'\d+'
+    t.value = int(t.value)
+    return t
 
 def t_error(t):
     print("Caracter ilegal '%s" % t.value[0])
@@ -110,10 +115,12 @@ def t_error(t):
 
 lexer = lex.lex()
 
-# lexer.input(""" SELECT nro FROM Tabla T""")
+#lexer.input("""SELECT fecha_operacion, fecha_presentacion_srt, tipo_operacion, tipo_operacion_modificacion AS Operacion_de, ectm.descripcion AS Tipo_de_Modificacion, ec.periodo_prima, ec.monto_fijo_alic, ec.porc_alic FROM EMIS_Contratos_SRT ec INNER_JOIN EMIS_Contratos_Tipos_Modificaciones ectm ON tipo_modificacion = cod_tipo_modificacion WHERE nro_contrato = 753603 AND ec.Fecha_Baja = 0 ORDER_BY ec.fecha_operacion DESC""")
+    #("SELECT eci.nro_contrato, oa.zona, oa.subzona, oa.nro_org, eci.nro_prod, ia.razon_social, oa.correo_electronico, eci.fecha_abm FROM EMIS_Contrato_Intermediarios AS eci INNER_JOIN Organizadores_Aux AS oa ON eci.nro_empsoc = oa.nro_empsoc AND eci.nro_org = oa.nro_org WHERE nro_contrato = eci.nro_org =244 ORDER BY eci.fecha_abm DESC")
+    #(""" SELECT nro FROM Tabla T""")
 #
-# while True:
-#     tok = lexer.token()
+#while True:
+#    tok = lexer.token()
 #     if not tok:
 #         break
 #     print(tok)
