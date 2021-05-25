@@ -130,3 +130,70 @@ def t_error(t):
 #    if not tok:
 #        break
 #    print(tok)
+
+
+
+
+
+import ply.yacc as yacc
+# dictionary of tables
+tables = {}
+
+def p_select(p):
+    'query : SELECT column_names FROM tables_name'
+    tables[p[2]]#"""nombre de la tabla - VER BIEN"""
+
+def p_select_where(p):
+    'query : SELECT column_names FROM tables_name WHERE conditions'
+    tables[p[2]]
+
+def p_select_where_in(p):
+    'query : SELECT column_names FROM tables_name WHERE conditions IN (SELECT column_names FROM tables_name WHERE condition)'
+    tables[p[2]]
+
+def p_select_where_orderby(p):
+    'query : SELECT column_names FROM tables_name WHERE conditions ORDER_BY condition'
+    tables[p[2]]
+
+def p_select_where_orderby_desc(p):
+    'query : SELECT column_names FROM tables_name WHERE conditions ORDER_BY condition DESC'
+    tables[p[2]]
+
+def p_select_where_orderby_asc(p):
+    'query : SELECT column_names FROM tables_name WHERE conditions ORDER_BY condition ASC'
+    tables[p[2]]
+
+def p_select_where_groupby_orderby_(p):
+    'query : SELECT column_names FROM tables_name WHERE conditions GROUP_BY column_names ORDER_BY condition'
+    tables[p[2]]
+
+def p_select_where_groupby_having_orderby_(p):
+    'query : SELECT column_names FROM tables_name WHERE conditions GROUP_BY column_names HAVING condition ORDER_BY condition'
+    tables[p[2]]
+
+def p_select_innerjoin_where(p):
+    'query : SELECT column_names FROM tables_name INNER_JOIN tables_name WHERE conditions'
+    tables[p[2]]
+
+def p_select_innerjoin_on_where(p):
+    'query : SELECT column_names FROM tables_name INNER_JOIN tables_name ON conditions WHERE conditions'
+    tables[p[2]]
+
+def p_select_leftjoin_where(p):
+    'query : SELECT column_names FROM tables_name LEFT_JOIN tables_name WHERE conditions'
+    tables[p[2]]
+
+def p_select_leftjoin_on_where(p):
+    'query : SELECT column_names FROM tables_name LEFT_JOIN tables_name ON conditions WHERE conditions'
+    tables[p[2]]
+
+def p_select_rightjoin_where(p):
+    'query : SELECT column_names FROM tables_name RIGHT_JOIN tables_name WHERE conditions'
+    tables[p[2]]
+
+def p_select_rightjoin_on_where(p):
+    'query : SELECT column_names FROM tables_name RIGHT_JOIN tables_name ON conditions WHERE conditions'
+    tables[p[2]]
+
+
+
