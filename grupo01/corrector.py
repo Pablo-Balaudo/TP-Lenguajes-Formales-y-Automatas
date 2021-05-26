@@ -23,10 +23,10 @@ samples = [
                 c.id = p.customer_id
         ''', {'customers': ['first_name', 'id', 'last_name'],
               'phones_numbers': ['customer_id', 'number']})
-    ]
+]
 
 for ix, sample in enumerate(samples):
-    print('***** Resultados test parsing ejemplo {} *****'.format(ix+1))
+    print('***** Resultados test parsing ejemplo {} *****'.format(ix + 1))
     print(sample[0])
     print('-' * 3, ' Fin consulta ', '-' * 3)
 
