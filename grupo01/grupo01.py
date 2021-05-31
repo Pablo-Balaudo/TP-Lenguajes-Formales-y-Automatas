@@ -23,7 +23,7 @@ reserved = {
     'RIGHT': 'RIGHT',
     'SELECT': 'SELECT',
     'WHERE': 'WHERE',
-    r'[a-zA-Z][\_a-zA-Z0-9]*':'TABLE_NAME',
+
 
 
     # Logical Operators (AND, OR)
@@ -39,7 +39,7 @@ tokens = list(reserved.values()) + [
     'LPAREN', 'RPAREN', 'LBRACKET', 'RBRACKET', 'COMMA', 'PERIOD',
 
     # Other data (name of the table, name of the column, ID for reserved words lookup)
-     'COLUMN_NAME', 'STRING', 'NUMBER'
+     'TABLE_NAME','COLUMN_NAME', 'STRING', 'NUMBER'
 ]
 
 t_EQUAL_TO = r'\='
@@ -59,7 +59,6 @@ t_PERIOD = r'\.'
 
 
 STRING = r'\'' + r'[a-zA-Z_0-9_ ]*' + r'\''
-##COLUMNNAME= r'[a-zA-Z][\_a-zA-Z0-9]*' + r'\.' + r'[a-zA-Z][\_a-zA-Z0-9]*'
 
 
 @lex.TOKEN(STRING)
@@ -68,7 +67,7 @@ def t_STRING(t):
     t.type = reserved.get(t.value, 'STRING')    # Check for reserved words
     return t
 
-##@lex.TOKEN(COLUMNNAME)
+
 def t_COLUMN_NAME(t):
     r"""[a-zA-Z][\_a-zA-Z0-9]*\.[a-zA-Z][\_a-zA-Z0-9]*"""
     t.type = reserved.get(t.value, 'COLUMN_NAME')    # Check for reserved words
@@ -132,7 +131,8 @@ WHERE c.first_name = 'hola que tal 123'
 '''
 
 
-lexer.input(example_4)
+
+lexer.input(example_7)
 
 while True:
     tok = lexer.token()
