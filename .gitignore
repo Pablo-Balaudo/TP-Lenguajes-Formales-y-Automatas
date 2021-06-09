@@ -146,3 +146,6 @@ dmypy.json
 .idea/**/gradle.xml
 .idea/**/libraries
 *.iws /out/
+
+grupo01/parser.out
+grupo01/parsetab.py
