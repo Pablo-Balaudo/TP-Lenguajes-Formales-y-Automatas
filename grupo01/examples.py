@@ -7,7 +7,7 @@ module_file = [f.split('.')[0] for f in files if 'grupo' in f][0]
 grupo = importlib.import_module(module_file)
 
 examples = ("""SELECT eci.nro_contrato, oa.zona, oa.subzona, oa.nro_org, 
-eci.nro_prod, ia.razon_social, oa.correo_electronico, eci.fecha_abm 
+eci.nro_prod, oa.correo_electronico, eci.fecha_abm 
 FROM EMIS_Contrato_Intermediarios AS eci INNER JOIN Organizadores_Aux AS oa ON 
 eci.nro_empsoc = oa.nro_empsoc AND eci.nro_org = oa.nro_org 
 WHERE eci.nro_org =244 ORDER BY eci.fecha_abm DESC""",

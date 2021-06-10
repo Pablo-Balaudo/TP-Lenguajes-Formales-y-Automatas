@@ -5,22 +5,28 @@ import ply.yacc as yacc
 class SelectState:
     def __init__(self, input = None):
         self.parsing = input
-        self.parsed_tables = dict()
 
-    def add_table(self, table):
-        parsed = self.parsed_tables.get(table)
-
-        if not parsed:
-            self.parsed_tables[table] = []
-
-    def add_column(self, table, column):
-        self.add_table(table)
-        table_columns = self.parsed_tables[table]
-        if column not in table_columns:
-            table_columns.append(column)
+class Table:
+    def __init__(self, name, alias = None):
+        self.name = name
+        self.alias = alias
     
-    def get_report(self):
-        return self.parsed_tables
+    def is_name(self, value):
+        return self.name == value or self.alias == value
+
+    def __repr__(self):
+        if not self.alias:
+            return f'Table({ self.name })'
+        else:
+            return f'Table({ self.name } \'{ self.alias }\')'
+
+class Column:
+    def __init__(self, name, table):
+        self.name = name
+        self.table = table
+    
+    def __repr__(self):
+        return f'Column({ self.table }->{ self.name })'
 
 reserved = {
     'AS': 'AS',
@@ -73,7 +79,9 @@ t_NOT_EQUAL_TO = r'\<>'
 t_LEFT_PARENTHESIS = r'\('
 t_RIGHT_PARENTHESIS = r'\)'
 t_COMMA = r'\,'
+COMMA_CHAR = ','
 t_PERIOD = r'\.'
+PERIOD_CHAR = '.'
 
 # Simple REs
 RE_Number = r'\d+'
@@ -204,7 +212,24 @@ def p_nt_column(p):
               | STRING
               | NUMBER
     '''
-    p[0] = parse_tuple(p)
+    value = p[1]
+
+    table_name, col_name = None, None
+
+    is_str = type(value) is str
+    is_tuple = type(value) is tuple
+
+    if is_str or is_tuple:
+        if PERIOD_CHAR in value:
+            if is_str:
+                table_name, col_name = value.split('.')
+            elif is_tuple:
+                table_name, period, col_name = value
+
+    if col_name:
+        p[0] = Column(col_name, table_name)
+    else:
+        p[0] = parse_tuple(p)
 
 def p_nt_columns(p):
     '''
@@ -228,7 +253,18 @@ def p_nt_tables(p):
               | TABLE_NAME NT_Auxiliary_Table NT_JOINS
               | TABLE_NAME NT_Auxiliary_Table COMMA NT_Tables
     '''
-    p[0] = parse_tuple(p)
+    value = parse_tuple(p)
+
+    name, alias = value[0], value[1]
+
+    if type(alias) is tuple:
+        if 'AS' in alias:
+            alias = alias[1]
+
+    if len(value) > 2:
+        p[0] = (Table(name, alias), *value[2:])
+    else:
+        p[0] = (Table(name, alias),)
 
 def p_nt_auxiliary_table(p):
     '''
@@ -306,7 +342,15 @@ def p_nt_join(p):
     '''
     NT_JOIN : JOIN TABLE_NAME NT_Auxiliary_Table ON NT_Conditions
     '''
-    p[0] = parse_tuple(p)
+    value = parse_tuple(p)
+
+    name, alias = value[1], value[2]
+
+    if type(alias) is tuple:
+        if 'AS' in alias:
+            alias = alias[1]
+    
+    p[0] = (value[0], Table(name, alias), *value[3:])
 
 def p_nt_joins(p):
     '''
@@ -321,11 +365,61 @@ def p_empty(p):
     """empty :"""
     pass
 
+def reduced(objs):
+    result = []
+
+    try:
+        for element in objs:
+            if type(element) is list:
+                result = [*result, *reduced(element)]
+            else:
+                result.append(element)
+    except TypeError:
+        return objs
+    
+    return result
+
+def filter_select_report(parsed_result):
+    result = reduced(
+    [
+        reduced(filter_select_report(obj)) if type(obj) is tuple else obj
+
+        for obj in parsed_result 
+            if type(obj) is Table 
+               or type(obj) is Column 
+               or type(obj) is tuple
+    ])
+
+    tables = [table for table in result if type(table) is Table]
+    columns = [table for table in result if type(table) is Column]
+
+    return tables, columns
+
+def build_select_report(tables, columns):
+    report = dict()
+
+    for column in columns:
+        try:
+            table = next(filter(lambda table: table.is_name(column.table), tables))
+
+            if table.name not in report:
+                report[table.name] = []
+            
+            table_columns = report[table.name]
+
+            if column.name not in table_columns:
+                table_columns.append(column.name)
+            
+        except StopIteration:
+            raise Exception(f"table '{ column.table }' of '{ column.table }.{ column.name }' must be on FROM clause")
+
+    for table in report:
+        report[table].sort()
+
+    return report
+
 lexer  = lex.lex()
 parser = yacc.yacc()
-
-def build_select_report(parsed_result):
-    pass
 
 def parse_select_statement(select_input, debug = False):
     lexer.lineno = 1
@@ -339,4 +433,4 @@ def parse_select_statement(select_input, debug = False):
     if debug:
         print('DEBUG PARSER:', parsed)
 
-    return build_select_report(parsed)
+    return build_select_report(*filter_select_report(parsed))
