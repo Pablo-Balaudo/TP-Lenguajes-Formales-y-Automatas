@@ -180,8 +180,10 @@ def p_nt_select(p):
 def p_nt_columns_select(p):
     """
     NT_Columns_Select : COLUMN_NAME
-                      | NT_Columns_Select COMMA NT_Columns_Select
+                      | COLUMN_NAME COMMA NT_Columns_Select
                       | NT_Function LEFT_PARENTHESIS COLUMN_NAME RIGHT_PARENTHESIS
+                      | NT_Function LEFT_PARENTHESIS COLUMN_NAME RIGHT_PARENTHESIS COMMA NT_Columns_Select
+
     """
     p[0] = parse_tuple(p)
 
@@ -259,7 +261,7 @@ def p_nt_select_optional(p):
 def p_nt_columns_group_by(p):
     """
     NT_Columns_Group_By : COLUMN_NAME
-                        | NT_Columns_Group_By COMMA NT_Columns_Group_By
+                        | COLUMN_NAME COMMA NT_Columns_Group_By
     """
     p[0] = parse_tuple(p)
 
@@ -269,8 +271,11 @@ def p_nt_aux_order_by(p):
     NT_Aux_Order_By : COLUMN_NAME
                     | COLUMN_NAME  ASC
                     | COLUMN_NAME  DESC
-                    | NT_Aux_Order_By  COMMA NT_Aux_Order_By
+                    | COLUMN_NAME COMMA NT_Aux_Order_By
+                    | COLUMN_NAME  ASC COMMA NT_Aux_Order_By
+                    | COLUMN_NAME  DESC COMMA NT_Aux_Order_By
                     | NT_Function LEFT_PARENTHESIS COLUMN_NAME RIGHT_PARENTHESIS
+                    | NT_Function LEFT_PARENTHESIS COLUMN_NAME RIGHT_PARENTHESIS COMMA NT_Aux_Order_By
     """
     p[0] = parse_tuple(p)
 
@@ -286,9 +291,7 @@ def p_nt_data_types(p):
 
 def p_nt_conditions(p):
     """
-    NT_Conditions : NT_Conditions OR NT_Conditions
-                  | NT_Conditions AND NT_Conditions
-                  | COLUMN_NAME EQUAL_TO NT_Data_Types
+    NT_Conditions : COLUMN_NAME EQUAL_TO NT_Data_Types
                   | COLUMN_NAME NOT_EQUAL_TO NT_Data_Types
                   | COLUMN_NAME GREATER_THAN NT_Data_Types
                   | COLUMN_NAME LESS_THAN NT_Data_Types
@@ -296,6 +299,22 @@ def p_nt_conditions(p):
                   | COLUMN_NAME LESS_THAN_OR_EQUAL_TO NT_Data_Types
                   | LEFT_PARENTHESIS NT_Conditions RIGHT_PARENTHESIS
                   | COLUMN_NAME IN LEFT_PARENTHESIS Axiom RIGHT_PARENTHESIS
+                  | COLUMN_NAME EQUAL_TO NT_Data_Types OR NT_Conditions
+                  | COLUMN_NAME NOT_EQUAL_TO NT_Data_Types OR NT_Conditions
+                  | COLUMN_NAME GREATER_THAN NT_Data_Types OR NT_Conditions
+                  | COLUMN_NAME LESS_THAN NT_Data_Types OR NT_Conditions
+                  | COLUMN_NAME GREATER_THAN_OR_EQUAL_TO NT_Data_Types OR NT_Conditions
+                  | COLUMN_NAME LESS_THAN_OR_EQUAL_TO NT_Data_Types OR NT_Conditions
+                  | LEFT_PARENTHESIS NT_Conditions RIGHT_PARENTHESIS OR NT_Conditions
+                  | COLUMN_NAME IN LEFT_PARENTHESIS Axiom RIGHT_PARENTHESIS OR NT_Conditions
+                  | COLUMN_NAME EQUAL_TO NT_Data_Types AND NT_Conditions
+                  | COLUMN_NAME NOT_EQUAL_TO NT_Data_Types AND NT_Conditions
+                  | COLUMN_NAME GREATER_THAN NT_Data_Types AND NT_Conditions
+                  | COLUMN_NAME LESS_THAN NT_Data_Types AND NT_Conditions
+                  | COLUMN_NAME GREATER_THAN_OR_EQUAL_TO NT_Data_Types AND NT_Conditions
+                  | COLUMN_NAME LESS_THAN_OR_EQUAL_TO NT_Data_Types AND NT_Conditions
+                  | LEFT_PARENTHESIS NT_Conditions RIGHT_PARENTHESIS AND NT_Conditions
+                  | COLUMN_NAME IN LEFT_PARENTHESIS Axiom RIGHT_PARENTHESIS AND NT_Conditions
     """
     p[0] = parse_tuple(p)
 
