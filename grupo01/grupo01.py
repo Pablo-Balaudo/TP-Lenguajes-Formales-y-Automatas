@@ -185,7 +185,21 @@ def p_nt_columns_select(p):
                       | NT_Function LEFT_PARENTHESIS COLUMN_NAME RIGHT_PARENTHESIS COMMA NT_Columns_Select
 
     """
-    p[0] = parse_tuple(p)
+    value = p[1]
+    table_name, col_name = None, None
+    is_str = type(value) is str
+    is_tuple = type(value) is tuple
+
+    if is_str or is_tuple:
+        if PERIOD_CHAR in value:
+            if is_str:
+                table_name, col_name = value.split('.')
+            elif is_tuple:
+                table_name, period, col_name = value
+    if col_name:
+        p[0] = Column(col_name, table_name)
+    else:
+        p[0] = parse_tuple(p)
 
 
 def p_nt_function(p):
@@ -224,11 +238,6 @@ def p_nt_tables(p):
     if alias=='AS':
         pos_alias = 2
         alias = value[pos_alias]
-
-    if alias != 'AS':
-        pos_alias = 0
-        if pos_alias == 0:
-            alias = None
 
     if len(value) > 2:
         p[0] = (Table(name, alias), *value[pos_alias:])
@@ -617,7 +626,7 @@ lexer = lex.lex()
 parser = yacc.yacc()
 
 
-def parse_select_statement(select_input, debug=True):
+def parse_select_statement(select_input, debug=False):
     lexer.lineno = 1
 
     parser_state = SelectState(select_input)
