@@ -217,7 +217,23 @@ def p_nt_tables(p):
               | TABLE_NAME AS TABLE_NAME NT_Joins
               | TABLE_NAME AS TABLE_NAME COMMA NT_Tables
     """
-    p[0] = parse_tuple(p)
+    value = parse_tuple(p)
+    pos_alias = 1
+    name, alias = value[0], value[pos_alias]
+
+    if alias=='AS':
+        pos_alias = 2
+        alias = value[pos_alias]
+
+    if alias != 'AS':
+        pos_alias = 0
+        if pos_alias == 0:
+            alias = None
+
+    if len(value) > 2:
+        p[0] = (Table(name, alias), *value[pos_alias:])
+    else:
+        p[0] = (Table(name, alias),)
 
 
 def p_nt_joins(p):
@@ -240,7 +256,22 @@ def p_nt_join(p):
             | JOIN TABLE_NAME TABLE_NAME ON NT_Conditions
             | JOIN TABLE_NAME AS TABLE_NAME ON NT_Conditions
     """
-    p[0] = parse_tuple(p)
+    value = parse_tuple(p)
+
+    pos_alias=2
+    name, alias = value[1], value[pos_alias]
+
+    if alias=='AS':
+        pos_alias=3
+        alias=value[pos_alias]
+
+    if alias=='ON':
+        pos_alias=1
+        if pos_alias==1:
+            alias=None
+
+    p[0] = (value[0], Table(name, alias), *value[pos_alias + 1:])
+
 
 
 def p_nt_select_optional(p):
@@ -286,8 +317,23 @@ def p_nt_data_types(p):
                   | NUMBER
                   | COLUMN_NAME
     """
-    p[0] = parse_tuple(p)
+    value = p[1]
 
+    table_name, col_name=None,None
+    is_str = type(value) is str
+    is_tuple = type(value) is tuple
+
+    if is_str or is_tuple:
+        if PERIOD_CHAR in value:
+            if is_str:
+                table_name, col_name = value.split('.')
+            elif is_tuple:
+                table_name, period, col_name = value
+
+    if col_name:
+        p[0] = Column(col_name, table_name)
+    else:
+        p[0] = parse_tuple(p)
 
 def p_nt_conditions(p):
     """
@@ -506,7 +552,7 @@ def parse_tuple(p, reduce=False):
 #     p[0] = parse_tuple(p)
 #
 #
-# def p_empty(p):
+#def p_empty(p):
 #     """empty :"""
 #     pass
 
@@ -571,7 +617,7 @@ lexer = lex.lex()
 parser = yacc.yacc()
 
 
-def parse_select_statement(select_input, debug=False):
+def parse_select_statement(select_input, debug=True):
     lexer.lineno = 1
 
     parser_state = SelectState(select_input)
