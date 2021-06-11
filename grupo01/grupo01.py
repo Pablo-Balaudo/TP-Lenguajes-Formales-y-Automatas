@@ -1,5 +1,6 @@
 import ply.lex as lex
 import ply.yacc as yacc
+import re
 
 
 class SelectState:
@@ -23,9 +24,9 @@ class Table:
 
 
 class Column:
-    def __init__(self, name, table):
-        self.name = name
+    def __init__(self, table, name):
         self.table = table
+        self.name = name
 
     def __repr__(self):
         return f'Column({self.table}->{self.name})'
@@ -185,21 +186,7 @@ def p_nt_columns_select(p):
                       | NT_Function LEFT_PARENTHESIS COLUMN_NAME RIGHT_PARENTHESIS COMMA NT_Columns_Select
 
     """
-    value = p[1]
-    table_name, col_name = None, None
-    is_str = type(value) is str
-    is_tuple = type(value) is tuple
-
-    if is_str or is_tuple:
-        if PERIOD_CHAR in value:
-            if is_str:
-                table_name, col_name = value.split('.')
-            elif is_tuple:
-                table_name, period, col_name = value
-    if col_name:
-        p[0] = Column(col_name, table_name)
-    else:
-        p[0] = parse_tuple(p)
+    p[0] = parse_columns(p)
 
 
 def p_nt_function(p):
@@ -238,9 +225,13 @@ def p_nt_tables(p):
     if alias=='AS':
         pos_alias = 2
         alias = value[pos_alias]
+    
+    if type(alias) is tuple or alias == COMMA_CHAR:
+        pos_alias = 0
+        alias = None
 
     if len(value) > 2:
-        p[0] = (Table(name, alias), *value[pos_alias:])
+        p[0] = (Table(name, alias), *value[pos_alias + 1:])
     else:
         p[0] = (Table(name, alias),)
 
@@ -276,8 +267,7 @@ def p_nt_join(p):
 
     if alias=='ON':
         pos_alias=1
-        if pos_alias==1:
-            alias=None
+        alias=None
 
     p[0] = (value[0], Table(name, alias), *value[pos_alias + 1:])
 
@@ -303,7 +293,7 @@ def p_nt_columns_group_by(p):
     NT_Columns_Group_By : COLUMN_NAME
                         | COLUMN_NAME COMMA NT_Columns_Group_By
     """
-    p[0] = parse_tuple(p)
+    p[0] = parse_columns(p)
 
 
 def p_nt_aux_order_by(p):
@@ -317,7 +307,7 @@ def p_nt_aux_order_by(p):
                     | NT_Function LEFT_PARENTHESIS COLUMN_NAME RIGHT_PARENTHESIS
                     | NT_Function LEFT_PARENTHESIS COLUMN_NAME RIGHT_PARENTHESIS COMMA NT_Aux_Order_By
     """
-    p[0] = parse_tuple(p)
+    p[0] = parse_columns(p)
 
 
 def p_nt_data_types(p):
@@ -326,23 +316,7 @@ def p_nt_data_types(p):
                   | NUMBER
                   | COLUMN_NAME
     """
-    value = p[1]
-
-    table_name, col_name=None,None
-    is_str = type(value) is str
-    is_tuple = type(value) is tuple
-
-    if is_str or is_tuple:
-        if PERIOD_CHAR in value:
-            if is_str:
-                table_name, col_name = value.split('.')
-            elif is_tuple:
-                table_name, period, col_name = value
-
-    if col_name:
-        p[0] = Column(col_name, table_name)
-    else:
-        p[0] = parse_tuple(p)
+    p[0] = parse_columns(p)
 
 def p_nt_conditions(p):
     """
@@ -371,7 +345,7 @@ def p_nt_conditions(p):
                   | LEFT_PARENTHESIS NT_Conditions RIGHT_PARENTHESIS AND NT_Conditions
                   | COLUMN_NAME IN LEFT_PARENTHESIS Axiom RIGHT_PARENTHESIS AND NT_Conditions
     """
-    p[0] = parse_tuple(p)
+    p[0] = parse_columns(p)
 
 
 # Error handling rule
@@ -391,180 +365,23 @@ def parse_tuple(p, reduce=False):
         value = result[0]
 
         if value is None:
-            return value
+            result = value
 
         if reduce and type(value) is tuple:
-            return value
+            result = value
 
     return result
 
+def is_column_token(token):
+    return type(token) is str and re.match(RE_Column, token)
 
-# def p_nt_column(p):
-#     """
-#     NT_COLUMN : TABLE_NAME PERIOD COLUMN_NAME
-#               | COLUMN_NAME
-#               | STRING
-#               | NUMBER
-#     """
-#     value = p[1]
-#
-#     table_name, col_name = None, None
-#
-#     is_str = type(value) is str
-#     is_tuple = type(value) is tuple
-#
-#     if is_str or is_tuple:
-#         if PERIOD_CHAR in value:
-#             if is_str:
-#                 table_name, col_name = value.split('.')
-#             elif is_tuple:
-#                 table_name, period, col_name = value
-#
-#     if col_name:
-#         p[0] = Column(col_name, table_name)
-#     else:
-#         p[0] = parse_tuple(p)
-#
-#
-# def p_nt_columns(p):
-#     """
-#     NT_Columns : NT_COLUMN
-#                | NT_Function LEFT_PARENTHESIS NT_COLUMN RIGHT_PARENTHESIS
-#                | NT_Columns COMMA NT_Columns
-#     """
-#     p[0] = parse_tuple(p, reduce=True)
-#
-#
-# def p_nt_tables(p):
-#     """
-#     NT_Tables : TABLE_NAME NT_Auxiliary_Table
-#               | TABLE_NAME NT_Auxiliary_Table NT_Joins
-#               | TABLE_NAME NT_Auxiliary_Table COMMA NT_Tables
-#     """
-#     value = parse_tuple(p)
-#
-#     name, alias = value[0], value[1]
-#
-#     if type(alias) is tuple:
-#         if 'AS' in alias:
-#             alias = alias[1]
-#
-#     if len(value) > 2:
-#         p[0] = (Table(name, alias), *value[2:])
-#     else:
-#         p[0] = (Table(name, alias),)
-#
-#
-# def p_nt_auxiliary_table(p):
-#     """
-#     NT_Auxiliary_Table : empty
-#                        | AS TABLE_NAME
-#                        | TABLE_NAME
-#     """
-#     p[0] = parse_tuple(p)
-#
-#
-# def p_nt_where(p):
-#     """
-#     NT_WHERE : WHERE NT_Conditions
-#     """
-#     p[0] = parse_tuple(p)
-#
-#
-# def p_nt_condition(p):
-#     """
-#     NT_Condition : NT_COLUMN EQUAL_TO NT_COLUMN
-#                  | NT_COLUMN GREATER_THAN NT_COLUMN
-#                  | NT_COLUMN LESS_THAN NT_COLUMN
-#                  | NT_COLUMN GREATER_THAN_OR_EQUAL_TO NT_COLUMN
-#                  | NT_COLUMN LESS_THAN_OR_EQUAL_TO NT_COLUMN
-#                  | NT_COLUMN NOT_EQUAL_TO NT_COLUMN
-#                  | NT_COLUMN AND NT_COLUMN
-#                  | NT_COLUMN OR NT_COLUMN
-#                  | NT_COLUMN IN LEFT_PARENTHESIS Axiom RIGHT_PARENTHESIS
-#     """
-#     p[0] = parse_tuple(p)
-#
-#
-# def p_nt_conditions(p):
-#     """
-#     NT_Conditions : NT_Condition NT_AUX_Conditions
-#                   | LEFT_PARENTHESIS NT_Condition RIGHT_PARENTHESIS NT_AUX_Conditions
-#                   | LEFT_PARENTHESIS NT_Condition NT_AUX_Conditions RIGHT_PARENTHESIS
-#     """
-#     p[0] = parse_tuple(p)
-#
-#
-# def p_nt_aux_conditions(p):
-#     """
-#     NT_AUX_Conditions : empty
-#                       | AND NT_Conditions
-#                       | OR NT_Conditions
-#     """
-#     p[0] = parse_tuple(p)
-#
-#
-# def p_order_by(p):
-#     """
-#     ORDER_BY : ORDER BY NT_Aux_Order_By
-#     """
-#     p[0] = parse_tuple(p)
-#
-#
-# def p_nt_aux_order_by(p):
-#     """
-#     NT_Aux_Order_By : NT_COLUMN
-#                     | NT_COLUMN ASC
-#                     | NT_COLUMN DESC
-#                     | NT_COLUMN COMMA NT_Aux_Order_By
-#     """
-#     p[0] = parse_tuple(p)
-#
-#
-# def p_group_by(p):
-#     """
-#     GROUP_BY : GROUP BY NT_Columns AUX_HAVING
-#     """
-#     p[0] = parse_tuple(p)
-#
-#
-# def p_aux_having(p):
-#     """
-#     AUX_HAVING : empty
-#                | HAVING NT_Conditions
-#     """
-#     p[0] = parse_tuple(p)
-#
-#
-# def p_nt_join(p):
-#     """
-#     NT_Join : JOIN TABLE_NAME NT_Auxiliary_Table ON NT_Conditions
-#     """
-#     value = parse_tuple(p)
-#
-#     name, alias = value[1], value[2]
-#
-#     if type(alias) is tuple:
-#         if 'AS' in alias:
-#             alias = alias[1]
-#
-#     p[0] = (value[0], Table(name, alias), *value[3:])
-#
-#
-# def p_nt_joins(p):
-#     """
-#     NT_Joins : empty
-#              | NT_Join NT_Joins
-#              | INNER NT_Join NT_Joins
-#              | LEFT NT_Join NT_Joins
-#     """
-#     p[0] = parse_tuple(p)
-#
-#
-#def p_empty(p):
-#     """empty :"""
-#     pass
+def parse_columns(p):
+    value = parse_tuple(p)
 
+    return tuple(
+        Column(*(token.split(PERIOD_CHAR))) if is_column_token(token) else token 
+        for token in value if type(value) is tuple
+    )
 
 def reduced(objects):
     result = []
