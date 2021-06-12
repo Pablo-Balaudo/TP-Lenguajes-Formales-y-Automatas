@@ -222,10 +222,10 @@ def p_nt_tables(p):
     pos_alias = 1
     name, alias = value[0], value[pos_alias]
 
-    if alias=='AS':
+    if alias == 'AS':
         pos_alias = 2
         alias = value[pos_alias]
-    
+
     if type(alias) is tuple or alias == COMMA_CHAR:
         pos_alias = 0
         alias = None
@@ -258,19 +258,18 @@ def p_nt_join(p):
     """
     value = parse_tuple(p)
 
-    pos_alias=2
+    pos_alias = 2
     name, alias = value[1], value[pos_alias]
 
-    if alias=='AS':
-        pos_alias=3
-        alias=value[pos_alias]
+    if alias == 'AS':
+        pos_alias = 3
+        alias = value[pos_alias]
 
-    if alias=='ON':
-        pos_alias=1
-        alias=None
+    if alias == 'ON':
+        pos_alias = 1
+        alias = None
 
     p[0] = (value[0], Table(name, alias), *value[pos_alias + 1:])
-
 
 
 def p_nt_select_optional(p):
@@ -317,6 +316,7 @@ def p_nt_data_types(p):
                   | COLUMN_NAME
     """
     p[0] = parse_columns(p)
+
 
 def p_nt_conditions(p):
     """
@@ -372,16 +372,19 @@ def parse_tuple(p, reduce=False):
 
     return result
 
+
 def is_column_token(token):
     return type(token) is str and re.match(RE_Column, token)
+
 
 def parse_columns(p):
     value = parse_tuple(p)
 
     return tuple(
-        Column(*(token.split(PERIOD_CHAR))) if is_column_token(token) else token 
+        Column(*(token.split(PERIOD_CHAR))) if is_column_token(token) else token
         for token in value if type(value) is tuple
     )
+
 
 def reduced(objects):
     result = []
